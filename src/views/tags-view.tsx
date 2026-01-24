@@ -67,6 +67,8 @@ export const TagsView = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [caseSensitivityEnabled, setCaseSensitivityEnabled] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchHistoryPosition, setSearchHistoryPosition] = useState<"up" | "down">("up");
+  const searchBoxRef = React.useRef<HTMLDivElement | null>(null);
   const [matchingPaths, setMatchingPaths] = useState<Set<string>>(new Set());
   const [searchResults, setSearchResults] = useState<
     {
@@ -601,23 +603,15 @@ export const TagsView = ({
 
   return (
     <div className="tags-overview">
-      <SaveFilterMenu
-        savedFilters={savedFilters}
-        loadSavedFilter={loadSavedFilter}
-        saveFilter={saveFilter}
-        removeFilter={removeFilter}
-      />
-      <HeaderSettings
-        title="Filter"
-        value={filterAnd}
-        setFunction={setFilterAnd}
-        settings={[
-          { label: "AND", value: true },
-          { label: "OR", value: false },
-        ]}
-        className="slim"
-      />
-      <div>
+      <div className="top-toolbar">
+        <div className="toolbar-left">
+          <SaveFilterMenu
+            savedFilters={savedFilters}
+            loadSavedFilter={loadSavedFilter}
+            saveFilter={saveFilter}
+            removeFilter={removeFilter}
+          />
+        </div>
         <HeaderSettings
           title="Case sensitive"
           value={caseSensitivityEnabled}
@@ -630,68 +624,84 @@ export const TagsView = ({
           ]}
           className="slim"
         />
-        <input
-          type="text"
-          value={searchQuery}
-          className="content-search-input"
-          placeholder="Search in content..."
-          onChange={(event) => {
-            setSearchQuery(event.target.value);
-          }}
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-        />
-        {isSearchFocused && (plugin.settings.recentSearches?.length || 0) > 0 && (
-          <ul className="content-search-history">
-            {plugin.settings.recentSearches.slice(0, 6).map((q, i) => (
-              <li
-                key={`${q}-${i}`}
-                onMouseDown={() => {
-                  setSearchQuery(q);
-                }}
-              >
-                {q}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
-      <Select
-        className="tags-filter-select"
-        value={selectedOptions}
-        onChange={(val: SelectOption[]) => {
-          setSelectedOptions(val);
-        }}
-        options={convertStringsToOptions(allTags).sort(
-          (optionA: SelectOption, optionB: SelectOption): number => {
-            const lblA: string = optionA.label.toLowerCase();
-            const lblB: string = optionB.label.toLowerCase();
-            return lblA === lblB ? 0 : lblA > lblB ? 1 : -1;
-          }
-        )}
-        name="Filter"
-        placeholder="Select tags..."
-        isMulti
-      />
-      {plugin.settings.recentTagFilters?.length ? (
-        <div className="recent-tag-filters">
-          <ul>
-            {plugin.settings.recentTagFilters.slice(0, 6).map((arr, i) => (
-              <li
-                key={`recent-tags-${i}`}
-                onClick={() =>
-                  setSelectedOptions(
-                    arr.map((t) => ({ value: t, label: t }))
-                  )
+      <div className="tags-row">
+        <Select
+          className="tags-filter-select"
+          value={selectedOptions}
+          onChange={(val: SelectOption[]) => {
+            setSelectedOptions(val);
+          }}
+          options={convertStringsToOptions(allTags).sort(
+            (optionA: SelectOption, optionB: SelectOption): number => {
+              const lblA: string = optionA.label.toLowerCase();
+              const lblB: string = optionB.label.toLowerCase();
+              return lblA === lblB ? 0 : lblA > lblB ? 1 : -1;
+            }
+          )}
+          name="Filter"
+          placeholder="Select tags..."
+          isMulti
+        />
+      </div>
+
+      <div className="search-row">
+        <div className="search-box" ref={searchBoxRef}>
+          <input
+            type="text"
+            value={searchQuery}
+            className="content-search-input"
+            placeholder="Search in content..."
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+            }}
+          />
+          <span
+            className="search-history-toggle"
+            onClick={() => {
+              const box = searchBoxRef.current;
+              if (box) {
+                const rect = box.getBoundingClientRect();
+                const above = rect.top;
+                setSearchHistoryPosition(above > 200 ? "up" : "down");
+              }
+              setIsSearchFocused(!isSearchFocused);
+            }}
+          >
+            ▾
+          </span>
+          {isSearchFocused && (plugin.settings.recentSearches?.length || 0) > 0 && (
+            <Select
+              className="content-search-history-dropdown"
+              options={(plugin.settings.recentSearches || []).slice(0, 6).map((q) => ({
+                value: q,
+                label: q,
+              }))}
+              onChange={(option) => {
+                if (!option) {
+                  setIsSearchFocused(false);
+                  return;
                 }
-              >
-                {arr.join(", ")}
-              </li>
-            ))}
-          </ul>
+                if (Array.isArray(option)) {
+                  const o = option[0] as { value: string } | undefined;
+                  if (o) setSearchQuery(o.value);
+                } else {
+                  const o = option as unknown as { value: string };
+                  if (o && o.value) setSearchQuery(o.value);
+                }
+                setIsSearchFocused(false);
+              }}
+              isSearchable={false}
+              isMulti={false}
+              menuIsOpen={true}
+              menuPlacement={searchHistoryPosition === "up" ? "top" : "bottom"}
+              placeholder="Recent searches"
+              onBlur={() => setIsSearchFocused(false)}
+            />
+          )}
         </div>
-      ) : null}
+      </div>
 
       <div>
         {plugin.settings.propertyFilters &&
@@ -814,36 +824,8 @@ export const TagsView = ({
           ))}
       </div>
 
-      <Tags
-        plugin={plugin}
-        tags={nestedTags}
-        tagsCount={tagsCount}
-        filesCount={displayFiles.length}
-        hasFilters={!!selectedOptions.length}
-        showNested={showNested}
-        setShowNested={setShowNested}
-        showRelatedTags={showRelatedTags}
-        setShowRelatedTags={setShowRelatedTags}
-        onFileClick={onFileClicked}
-        onTagClick={(tagData: TagData) => {
-          setSelectedOptions(
-            selectedOptions.find((option) => option.value === tagData.tagPath)
-              ? selectedOptions.filter(
-                  (option) => option.value !== tagData.tagPath
-                )
-              : [
-                  ...selectedOptions,
-                  {
-                    label: tagData.tagPath,
-                    value: tagData.tagPath,
-                  },
-                ]
-          );
-        }}
-      />
-
       {searchQuery.trim() && (
-        <div className="content-search-results">
+        <div className="content-search-results compact">
           <h4>
             {searchResults.length} results in {matchingPaths.size} files
           </h4>
@@ -881,6 +863,36 @@ export const TagsView = ({
           )}
         </div>
       )}
+
+      <Tags
+        plugin={plugin}
+        tags={nestedTags}
+        tagsCount={tagsCount}
+        filesCount={displayFiles.length}
+        hasFilters={!!selectedOptions.length}
+        showNested={showNested}
+        setShowNested={setShowNested}
+        showRelatedTags={showRelatedTags}
+        setShowRelatedTags={setShowRelatedTags}
+        onFileClick={onFileClicked}
+        onTagClick={(tagData: TagData) => {
+          setSelectedOptions(
+            selectedOptions.find((option) => option.value === tagData.tagPath)
+              ? selectedOptions.filter(
+                  (option) => option.value !== tagData.tagPath
+                )
+              : [
+                  ...selectedOptions,
+                  {
+                    label: tagData.tagPath,
+                    value: tagData.tagPath,
+                  },
+                ]
+          );
+        }}
+      />
+
+      
     </div>
   );
 };

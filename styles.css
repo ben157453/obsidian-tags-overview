@@ -301,6 +301,37 @@
   padding: 0 2px;
   border-radius: 2px;
 }
+.tags-overview .search-box {
+  position: relative;
+}
+.tags-overview .search-history-toggle {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  cursor: pointer;
+  color: var(--color-base-70);
+}
+.tags-overview .search-history-toggle:hover {
+  color: var(--link-color-hover);
+}
+/* Dropdown for recent content searches */
+.tags-overview .content-search-history-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: auto;
+  z-index: 1000;
+}
+.tags-overview .content-search-history-dropdown .react-select__control {
+  min-height: 0;
+  height: 0;
+  opacity: 0;
+  border: 0;
+  box-shadow: none;
+}
+.tags-overview .content-search-history-dropdown .react-select__menu {
+  z-index: 1001;
+}
 .tags-overview .has-sub-tags.is-collapsed > .nested-container {
   border-left: 1px solid #333;
 }
@@ -504,4 +535,90 @@
   text-align: center;
   color: var(--color-base-70);
   font-size: var(--font-smaller);
+}
+/* Toolbar layout and compact UI */
+.tags-overview .top-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.tags-overview .search-box {
+  position: relative;
+  flex: 1;
+}
+.tags-overview .content-search-history.popover-up {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 160px;
+  overflow: auto;
+  background-color: var(--background-primary);
+  z-index: 10;
+}
+.tags-overview .content-search-history.popover-down {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 160px;
+  overflow: auto;
+  background-color: var(--background-primary);
+  z-index: 10;
+}
+.tags-overview .content-search-preview {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 1px solid var(--color-base-40);
+  border-radius: 6px;
+  background-color: var(--background-primary);
+  max-height: 100px;
+  overflow: auto;
+}
+.tags-overview .content-search-preview.popover-down {
+  top: calc(100% + 4px);
+}
+.tags-overview .content-search-preview.popover-up {
+  bottom: calc(100% + 4px);
+}
+.tags-overview .content-search-preview ul {
+  margin: 0;
+  padding: 4px 8px;
+  list-style: none;
+}
+.tags-overview .content-search-preview li {
+  cursor: pointer;
+  padding: 2px 0;
+  font-size: var(--font-ui-small);
+}
+.tags-overview .content-search-results.compact.inline {
+  max-height: 180px;
+  overflow: auto;
+  min-width: 280px;
+  flex: 0 0 360px;
+  border: 1px solid var(--color-base-40);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.tags-overview .content-search-results.compact.inline ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tags-overview .content-search-results.compact.inline li {
+  padding: 2px 0;
+  cursor: pointer;
+}
+.tags-overview .content-search-results.compact.inline .match {
+  background-color: var(--background-modifier-success);
+}
+.tags-overview .tags-row,
+.tags-overview .search-row {
+  display: block;
+  width: 100%;
+}
+.tags-overview .tags-filter-select {
+  width: 100%;
 }
