@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import { mkdirSync, copyFileSync } from "fs";
 
 const banner =
 `/*
@@ -10,6 +11,12 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
+const pkgVersion = process.env.npm_package_version;
+const outFile = prod ? `dist/${pkgVersion}/main.js` : "main.js";
+if (prod) {
+	// Ensure versioned dist directory exists
+	mkdirSync(`dist/${pkgVersion}`, { recursive: true });
+}
 
 const context = await esbuild.context({
 	banner: {
@@ -37,11 +44,14 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: outFile,
 });
 
 if (prod) {
 	await context.rebuild();
+	// Copy plugin assets to versioned dist
+	copyFileSync("manifest.json", `dist/${pkgVersion}/manifest.json`);
+	copyFileSync("styles.css", `dist/${pkgVersion}/styles.css`);
 	process.exit(0);
 } else {
 	await context.watch();

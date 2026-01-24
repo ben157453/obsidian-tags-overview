@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import Select from "react-select";
-import { App, TFile } from "obsidian";
+import { App, TFile, debounce } from "obsidian";
 
 import TagsOverviewPlugin from "../main";
 import { RootView } from "./root-view";
@@ -62,6 +62,23 @@ export const TagsView = ({
   const [savedFilters, setSavedFilters] = useState(
     plugin.settings.savedFilters
   );
+
+  // Content search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [caseSensitivityEnabled, setCaseSensitivityEnabled] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [matchingPaths, setMatchingPaths] = useState<Set<string>>(new Set());
+  const [searchResults, setSearchResults] = useState<
+    {
+      file: TFile;
+      filePath: string;
+      lineNumber: number;
+      line: string;
+      matchStartIndex: number;
+      matchEndIndex: number;
+      header?: string;
+    }[]
+  >([]);
 
   // PropertyFiltersDataList is a map of property filters and their selected values
   const [propertyFilterDataList, setSelectedFilters] =
@@ -173,7 +190,20 @@ export const TagsView = ({
   // Get files to be displayed
   const selectedTags: string[] =
     selectedOptions?.map((option: SelectOption) => option.value) || [];
-  let displayFiles: TaggedFile[] = selectedTags.length
+  React.useEffect(() => {
+    const tagsArr = selectedTags;
+    const prev = plugin.settings.recentTagFilters || [];
+    const exists = prev.find(
+      (arr) =>
+        arr.length === tagsArr.length &&
+        arr.every((t) => tagsArr.includes(t))
+    );
+    if (!exists) {
+      const next = [tagsArr, ...prev].slice(0, 6);
+      plugin.saveSettings({ recentTagFilters: next });
+    }
+  }, [selectedOptions]);
+  let filteredFiles: TaggedFile[] = selectedTags.length
     ? allTaggedFiles.filter((file: TaggedFile) => {
         return filterAnd
           ? selectedTags.every(
@@ -193,7 +223,7 @@ export const TagsView = ({
 
   // Filter the list of files based on the property filters
   if (Object.keys(propertyFilterDataList).length > 0) {
-    displayFiles = displayFiles.filter((file: TaggedFile) => {
+    filteredFiles = filteredFiles.filter((file: TaggedFile) => {
       const frontMatter = plugin.app.metadataCache.getFileCache(
         file.file
       )?.frontmatter;
@@ -218,10 +248,13 @@ export const TagsView = ({
           const searchString = propertyFilterVal.toLowerCase();
           if (Array.isArray(frontMatterVal)) {
             includeFile = frontMatterVal.some((val) =>
-              val.toLowerCase().contains(searchString)
+              val.toLowerCase().includes(searchString)
             );
           } else {
-            includeFile = frontMatterVal.contains(searchString);
+            includeFile = frontMatterVal
+              .toString()
+              .toLowerCase()
+              .includes(searchString);
           }
         } else if (
           propertyFilterTypeMap[propertyFilterKey] === FILTER_TYPES.number
@@ -292,12 +325,115 @@ export const TagsView = ({
     });
   }
 
+  // Debounced content search on currently filtered files
+  const createQueryRegex = (
+    query: string,
+    caseSensitive: boolean
+  ): RegExp => {
+    let flags = "";
+    if (!caseSensitive) flags += "i";
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(escaped, flags);
+  };
+
+  const runSearch = debounce(
+    async (
+      query: string,
+      caseSensitive: boolean,
+      files: TaggedFile[]
+    ) => {
+      if (!query || !query.trim()) {
+        setMatchingPaths(new Set());
+        setSearchResults([]);
+        return;
+      }
+      const results: string[] = [];
+      const lineResults: {
+        file: TFile;
+        filePath: string;
+        lineNumber: number;
+        line: string;
+        matchStartIndex: number;
+        matchEndIndex: number;
+        header?: string;
+      }[] = [];
+      const reTest = createQueryRegex(query, caseSensitive);
+      const reMatch = new RegExp(reTest.source, `${reTest.flags}g`);
+      for (const tf of files) {
+        const contents = await plugin.app.vault.read(tf.file);
+        if (reTest.test(contents)) {
+          results.push(tf.file.path);
+        }
+        const lines = contents.split(/\r?\n|\r|\n/g);
+        let currentHeader = "";
+        lines.forEach((line, i) => {
+          const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+          if (headerMatch) {
+            currentHeader = headerMatch[2].trim();
+          }
+          const matches = line.matchAll(reMatch);
+          for (const m of matches) {
+            if (m.index !== undefined) {
+              lineResults.push({
+                file: tf.file,
+                filePath: tf.file.path,
+                lineNumber: i + 1,
+                line,
+                matchStartIndex: m.index,
+                matchEndIndex: m.index + m[0].length - 1,
+                header: currentHeader,
+              });
+            }
+          }
+        });
+      }
+      setMatchingPaths(new Set(results));
+      setSearchResults(lineResults);
+    },
+    300,
+    true
+  );
+
+  React.useEffect(() => {
+    const isNoFilters =
+      selectedOptions.length === 0 &&
+      Object.keys(propertyFilterDataList).length === 0;
+    const searchFiles: TaggedFile[] = isNoFilters
+      ? plugin.app.vault.getMarkdownFiles().map((f: TFile) => ({
+          file: f,
+          frontMatter: {},
+          tags: [],
+        }))
+      : filteredFiles;
+    runSearch(searchQuery, caseSensitivityEnabled, searchFiles);
+    const q = searchQuery.trim();
+    if (q) {
+      const prev = plugin.settings.recentSearches || [];
+      const next = [q, ...prev.filter((s) => s !== q)].slice(0, 6);
+      plugin.saveSettings({ recentSearches: next });
+    }
+  }, [
+    searchQuery,
+    caseSensitivityEnabled,
+    filteredFiles,
+    selectedOptions,
+    propertyFilterDataList,
+  ]);
+
   // Curry the files with a formatted version of the last modified and created date
   const getFormattedDate = (date: Date): string => {
     return plugin.settings.showCalendarDates
       ? formatCalendardDate(date, plugin.settings.dateFormat)
       : formatDate(date, plugin.settings.dateFormat);
   };
+
+  // Apply content search filter if ready
+  let displayFiles = filteredFiles;
+  if (searchQuery.trim()) {
+    displayFiles = displayFiles.filter((taggedFile: TaggedFile) =>
+      matchingPaths.has(taggedFile.file.path)
+    );
+  }
   displayFiles.forEach((taggedFile: TaggedFile) => {
     taggedFile.formattedCreated = getFormattedDate(
       new Date(taggedFile.file.stat.ctime)
@@ -318,7 +454,7 @@ export const TagsView = ({
       tags = tags.filter(
         (tag: string) =>
           !selectedTags.length ||
-          selectedTags.contains(tag) ||
+          selectedTags.includes(tag) ||
           selectedTags.some((selectedTag) => tag.startsWith(`${selectedTag}/`))
       );
     }
@@ -385,6 +521,12 @@ export const TagsView = ({
   const loadSavedFilter = (filter: SavedFilter) => {
     setSelectedOptions(filter.selectedOptions);
     setFilterAnd(filter.filterAnd);
+    if (filter.searchQuery !== undefined) {
+      setSearchQuery(filter.searchQuery);
+    }
+    if (filter.caseSensitive !== undefined) {
+      setCaseSensitivityEnabled(Boolean(filter.caseSensitive));
+    }
     // Loop through the property filters and update the selected filters.
     // Ignore filters that are not in the enabled in the settings.
     const newPropertyFilter: PropertyFilterDataList = {};
@@ -425,6 +567,8 @@ export const TagsView = ({
             selectedOptions,
             filterAnd,
             properyFilters: deepCopy(propertyFilterDataList),
+            searchQuery,
+            caseSensitive: caseSensitivityEnabled,
           };
           setSavedFilters(newFilters);
         }
@@ -439,6 +583,8 @@ export const TagsView = ({
             selectedOptions,
             filterAnd,
             properyFilters: deepCopy(propertyFilterDataList),
+            searchQuery,
+            caseSensitive: caseSensitivityEnabled,
           },
         ].sort((a: SavedFilter, b: SavedFilter) => a.name.localeCompare(b.name))
       );
@@ -471,6 +617,46 @@ export const TagsView = ({
         ]}
         className="slim"
       />
+      <div>
+        <HeaderSettings
+          title="Case sensitive"
+          value={caseSensitivityEnabled}
+          setFunction={(val: boolean | string) =>
+            setCaseSensitivityEnabled(Boolean(val))
+          }
+          settings={[
+            { label: "On", value: true },
+            { label: "Off", value: false },
+          ]}
+          className="slim"
+        />
+        <input
+          type="text"
+          value={searchQuery}
+          className="content-search-input"
+          placeholder="Search in content..."
+          onChange={(event) => {
+            setSearchQuery(event.target.value);
+          }}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+        />
+        {isSearchFocused && (plugin.settings.recentSearches?.length || 0) > 0 && (
+          <ul className="content-search-history">
+            {plugin.settings.recentSearches.slice(0, 6).map((q, i) => (
+              <li
+                key={`${q}-${i}`}
+                onMouseDown={() => {
+                  setSearchQuery(q);
+                }}
+              >
+                {q}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <Select
         className="tags-filter-select"
         value={selectedOptions}
@@ -488,6 +674,24 @@ export const TagsView = ({
         placeholder="Select tags..."
         isMulti
       />
+      {plugin.settings.recentTagFilters?.length ? (
+        <div className="recent-tag-filters">
+          <ul>
+            {plugin.settings.recentTagFilters.slice(0, 6).map((arr, i) => (
+              <li
+                key={`recent-tags-${i}`}
+                onClick={() =>
+                  setSelectedOptions(
+                    arr.map((t) => ({ value: t, label: t }))
+                  )
+                }
+              >
+                {arr.join(", ")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div>
         {plugin.settings.propertyFilters &&
@@ -637,6 +841,46 @@ export const TagsView = ({
           );
         }}
       />
+
+      {searchQuery.trim() && (
+        <div className="content-search-results">
+          <h4>
+            {searchResults.length} results in {matchingPaths.size} files
+          </h4>
+          {searchResults.length === 0 ? (
+            <p className="no-results">No results</p>
+          ) : (
+            <ul>
+              {searchResults.slice(0, 100).map((r, i) => (
+                <li
+                  key={`${r.filePath}-${r.lineNumber}-${r.matchStartIndex}-${i}`}
+                  onClick={(event) =>
+                    onFileClicked(r.file, event.ctrlKey || event.metaKey)
+                  }
+                  draggable={true}
+                  onDragStart={(event) => {
+                    const linkText = r.header
+                      ? `[[${r.file.basename}#${r.header}]]`
+                      : `[[${r.file.basename}]]`;
+                    event.dataTransfer.setData("text/plain", linkText);
+                    event.dataTransfer.effectAllowed = "copy";
+                  }}
+                >
+                  <span className="file">{r.file.basename}</span>
+                  <span className="line">:{r.lineNumber} </span>
+                  <span className="snippet">
+                    {r.line.slice(0, r.matchStartIndex)}
+                    <span className="match">
+                      {r.line.slice(r.matchStartIndex, r.matchEndIndex + 1)}
+                    </span>
+                    {r.line.slice(r.matchEndIndex + 1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 };

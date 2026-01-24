@@ -29,6 +29,8 @@ export interface TagsOverviewSettings {
   tableColumns: TableColumn[];
   propertyFilters: PropertyFilter[];
   savedFilters: SavedFilter[];
+  recentSearches: string[];
+  recentTagFilters: string[][];
 }
 
 export const DEFAULT_SETTINGS: TagsOverviewSettings = {
@@ -49,6 +51,8 @@ export const DEFAULT_SETTINGS: TagsOverviewSettings = {
   ],
   propertyFilters: [],
   savedFilters: [],
+  recentSearches: [],
+  recentTagFilters: [],
 };
 
 export class TagsOverviewSettingTab extends PluginSettingTab {

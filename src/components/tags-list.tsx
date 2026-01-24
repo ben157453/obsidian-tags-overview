@@ -65,6 +65,12 @@ export const TagsList = ({
                     onClick={(event) =>
                       onFileClick(file.file, event.ctrlKey || event.metaKey)
                     }
+                    draggable={true}
+                    onDragStart={(event) => {
+                      const linkText = `[[${file.file.basename}]]`;
+                      event.dataTransfer.setData("text/plain", linkText);
+                      event.dataTransfer.effectAllowed = "copy";
+                    }}
                     className="file-link"
                   >
                     {file.file.basename}

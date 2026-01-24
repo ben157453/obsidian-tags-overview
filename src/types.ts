@@ -77,4 +77,6 @@ export interface SavedFilter {
   selectedOptions: SelectOption[];
   filterAnd: boolean;
   properyFilters: PropertyFilterDataList;
+  searchQuery?: string;
+  caseSensitive?: boolean;
 }

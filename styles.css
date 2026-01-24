@@ -218,6 +218,89 @@
 .tags-overview .tags-level-0.has-sub-tags > .nested-container {
   border-color: var(--background-secondary-alt);
 }
+
+/* Compact content search input */
+.tags-overview .content-search-input {
+  background-color: hsl(0, 0%, 100%);
+  border-color: hsl(0, 0%, 80%);
+.tags-overview .content-search-history {
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-base-40);
+  border-radius: 6px;
+}
+.tags-overview .content-search-history li {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.tags-overview .content-search-history li:hover {
+  background-color: var(--background-modifier-hover);
+}
+.tags-overview .recent-tag-filters ul {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-base-40);
+  border-radius: 6px;
+}
+.tags-overview .recent-tag-filters li {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.tags-overview .recent-tag-filters li:hover {
+  background-color: var(--background-modifier-hover);
+}
+  border-color: hsl(0, 0%, 80%);
+  border-radius: 4px;
+  width: 100%;
+  padding: 6px 8px;
+  color: hsl(0, 0%, 20%);
+  margin-bottom: 6px;
+  font-size: var(--font-ui-small);
+}
+.tags-overview .content-search-input::placeholder {
+  color: hsl(0, 0%, 50%);
+  font-size: var(--font-ui-small);
+}
+.tags-overview .content-search-results {
+  margin-top: 12px;
+}
+.tags-overview .content-search-results h4 {
+  margin: 6px 0;
+  font-size: var(--font-ui-small);
+  color: var(--color-base-70);
+}
+.tags-overview .content-search-results ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tags-overview .content-search-results li {
+  padding: 4px 6px;
+  font-size: var(--font-ui-small);
+  border-top: 1px solid var(--color-base-40);
+  cursor: pointer;
+}
+.tags-overview .content-search-results li:hover {
+  background-color: var(--nav-item-background-hover);
+}
+.tags-overview .content-search-results .file {
+  color: var(--link-color);
+}
+.tags-overview .content-search-results .line {
+  color: var(--color-base-70);
+}
+.tags-overview .content-search-results .snippet {
+  margin-left: 8px;
+  color: var(--color-base-60);
+}
+.tags-overview .content-search-results .match {
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  padding: 0 2px;
+  border-radius: 2px;
+}
 .tags-overview .has-sub-tags.is-collapsed > .nested-container {
   border-left: 1px solid #333;
 }
