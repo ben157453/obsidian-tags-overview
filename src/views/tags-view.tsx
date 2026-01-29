@@ -150,8 +150,21 @@ export const TagsView = ({
     });
   }, [selectedOptions]);
 
-  const onFileClicked = (file: TFile, inNewLeaf: boolean = false) => {
-    openFile(app, file, inNewLeaf);
+  const onFileClicked = async (
+    file: TFile,
+    inNewLeaf: boolean = false,
+    lineNumber?: number,
+    matchStartIndex?: number,
+    matchEndIndex?: number
+  ) => {
+    await openFile(
+      app,
+      file,
+      inNewLeaf,
+      lineNumber,
+      matchStartIndex,
+      matchEndIndex
+    );
   };
 
   const onFiltersChange = (propertyFilterKey: string, values: string[]) => {
@@ -629,6 +642,7 @@ export const TagsView = ({
       <div className="tags-row">
         <Select
           className="tags-filter-select"
+          classNamePrefix="react-select"
           value={selectedOptions}
           onChange={(val: SelectOption[]) => {
             setSelectedOptions(val);
@@ -674,6 +688,7 @@ export const TagsView = ({
           {isSearchFocused && (plugin.settings.recentSearches?.length || 0) > 0 && (
             <Select
               className="content-search-history-dropdown"
+              classNamePrefix="react-select"
               options={(plugin.settings.recentSearches || []).slice(0, 6).map((q) => ({
                 value: q,
                 label: q,
@@ -754,6 +769,7 @@ export const TagsView = ({
               {propertyFilter.type === FILTER_TYPES.select && (
                 <Select
                   className="tags-filter-select"
+                  classNamePrefix="react-select"
                   value={convertStringsToOptions(
                     propertyFilterDataList[propertyFilter.property]?.selected ||
                       []
@@ -837,7 +853,13 @@ export const TagsView = ({
                 <li
                   key={`${r.filePath}-${r.lineNumber}-${r.matchStartIndex}-${i}`}
                   onClick={(event) =>
-                    onFileClicked(r.file, event.ctrlKey || event.metaKey)
+                    onFileClicked(
+                      r.file,
+                      event.ctrlKey || event.metaKey,
+                      r.lineNumber,
+                      r.matchStartIndex,
+                      r.matchEndIndex
+                    )
                   }
                   draggable={true}
                   onDragStart={(event) => {

@@ -219,10 +219,22 @@
   border-color: var(--background-secondary-alt);
 }
 
-/* Compact content search input */
 .tags-overview .content-search-input {
-  background-color: hsl(0, 0%, 100%);
-  border-color: hsl(0, 0%, 80%);
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  font-size: var(--font-ui-small);
+}
+.tags-overview .content-search-input::placeholder {
+  color: #fff;
+  opacity: 0.7;
+  font-size: var(--font-ui-small);
+}
+
 .tags-overview .content-search-history {
   margin: 4px 0 8px;
   padding: 0;
@@ -251,18 +263,6 @@
 .tags-overview .recent-tag-filters li:hover {
   background-color: var(--background-modifier-hover);
 }
-  border-color: hsl(0, 0%, 80%);
-  border-radius: 4px;
-  width: 100%;
-  padding: 6px 8px;
-  color: hsl(0, 0%, 20%);
-  margin-bottom: 6px;
-  font-size: var(--font-ui-small);
-}
-.tags-overview .content-search-input::placeholder {
-  color: hsl(0, 0%, 50%);
-  font-size: var(--font-ui-small);
-}
 .tags-overview .content-search-results {
   margin-top: 12px;
 }
@@ -287,6 +287,7 @@
 }
 .tags-overview .content-search-results .file {
   color: var(--link-color);
+  font-weight: 600;
 }
 .tags-overview .content-search-results .line {
   color: var(--color-base-70);
@@ -331,6 +332,129 @@
 }
 .tags-overview .content-search-history-dropdown .react-select__menu {
   z-index: 1001;
+}
+
+.tags-overview .tags-filter-select .react-select__control {
+  background-color: #000;
+  border-color: #000;
+  box-shadow: none;
+}
+.tags-overview .tags-filter-select .react-select__control--is-focused {
+  box-shadow: 0 0 0 1px #000;
+}
+.tags-overview .tags-filter-select .react-select__single-value {
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__menu {
+  background-color: #000;
+  border: 1px solid #000;
+  max-height: 240px;
+}
+.tags-overview .tags-filter-select .react-select__menu-list {
+  background-color: #000;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.tags-overview .tags-filter-select .react-select__option {
+  background-color: #000;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__option--is-focused {
+  background-color: #111;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__option--is-selected {
+  background-color: #222;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__menu {
+  background-color: #000;
+  border: 1px solid #000;
+}
+.tags-overview .tags-filter-select .react-select__menu-list {
+  background-color: #000;
+}
+.tags-overview .tags-filter-select .react-select__option {
+  background-color: #000;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__option--is-focused {
+  background-color: #111;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__option--is-selected {
+  background-color: #222;
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__multi-value {
+  background-color: #111;
+  border: 1px solid #000;
+}
+.tags-overview .tags-filter-select .react-select__multi-value__label {
+  color: #fff;
+}
+.tags-overview .tags-filter-select .react-select__placeholder {
+  color: #fff;
+  opacity: 0.7;
+}
+.tags-overview .tags-filter-select .react-select__input input {
+  color: #fff !important;
+}
+
+.tags-overview .content-search-history-dropdown .react-select__menu {
+  background-color: #000;
+  border: 1px solid #000;
+  max-height: 220px;
+}
+.tags-overview .content-search-history-dropdown .react-select__menu-list {
+  background-color: #000;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.tags-overview .content-search-history-dropdown .react-select__option {
+  background-color: #000;
+  color: #fff;
+}
+.tags-overview .content-search-history-dropdown .react-select__option--is-focused {
+  background-color: #111;
+  color: #fff;
+}
+.tags-overview .content-search-history-dropdown .react-select__option--is-selected {
+  background-color: #222;
+  color: #fff;
+}
+
+/* Saved filters popover (history for tags) */
+.tags-overview .tag-view-popover {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.tags-overview .tag-view-popover h4 {
+  color: #fff;
+}
+.tags-overview .tag-view-popover ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tags-overview .tag-view-popover li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.tags-overview .tag-view-popover li span {
+  color: #fff;
+  cursor: pointer;
+}
+.tags-overview .tag-view-popover li span:hover {
+  background-color: #111;
+}
+.tags-overview .tag-view-popover .save-link {
+  color: #fff;
 }
 .tags-overview .has-sub-tags.is-collapsed > .nested-container {
   border-left: 1px solid #333;

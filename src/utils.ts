@@ -1,5 +1,5 @@
 import { SelectOption, TagData, TaggedFile } from "./types";
-import { App, TFile, moment, getAllTags } from "obsidian";
+import { App, TFile, moment, getAllTags, MarkdownView } from "obsidian";
 import { SORT_FILES, SORT_TAGS } from "./constants";
 
 export function formatDate(date: Date, dateFormat: string): string {
@@ -72,13 +72,56 @@ export const getAllTagsAndFiles = (app: App) => {
   };
 };
 
-export const openFile = (app: App, file: TFile, inNewLeaf = false): void => {
+export const openFile = async (
+  app: App,
+  file: TFile,
+  inNewLeaf = false,
+  lineNumber?: number,
+  matchStartIndex?: number,
+  matchEndIndex?: number
+): Promise<void> => {
   let leaf = app.workspace.getMostRecentLeaf();
-  if (leaf) {
-    if (inNewLeaf || leaf.getViewState().pinned) {
-      leaf = app.workspace.getLeaf("tab");
-    }
-    leaf.openFile(file);
+  if (!leaf) return;
+  if (inNewLeaf || leaf.getViewState().pinned) {
+    leaf = app.workspace.getLeaf("tab");
+  }
+  await leaf.openFile(file);
+  if (lineNumber && lineNumber > 0) {
+    setTimeout(() => {
+      const active = app.workspace.getActiveViewOfType(MarkdownView);
+      const v: MarkdownView | null =
+        leaf && leaf.view && leaf.view instanceof MarkdownView
+          ? (leaf.view as MarkdownView)
+          : active || null;
+      const editor = v && v.editor ? v.editor : undefined;
+      if (editor) {
+        editor.focus();
+        const targetLine = Math.max(0, lineNumber - 1);
+        if (
+          typeof matchStartIndex === "number" &&
+          typeof matchEndIndex === "number" &&
+          matchStartIndex >= 0 &&
+          matchEndIndex >= matchStartIndex
+        ) {
+          editor.setSelection(
+            { line: targetLine, ch: matchStartIndex },
+            { line: targetLine, ch: matchEndIndex + 1 }
+          );
+          setTimeout(() => {
+            editor.setCursor({ line: targetLine, ch: matchEndIndex + 1 });
+          }, 1500);
+        } else {
+          editor.setCursor({ line: targetLine, ch: 0 });
+        }
+        const maybeScroll = (editor as unknown as { scrollIntoView?: (range: { from: { line: number; ch: number }; to: { line: number; ch: number } }, center?: boolean) => void });
+        if (typeof maybeScroll.scrollIntoView === "function") {
+          maybeScroll.scrollIntoView(
+            { from: { line: targetLine, ch: 0 }, to: { line: targetLine, ch: 0 } },
+            true
+          );
+        }
+      }
+    }, 120);
   }
 };
 
