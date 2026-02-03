@@ -9,6 +9,7 @@ import { HeaderSettings } from "../components/header-settings";
 import { Tags } from "../components/tags";
 import { NameInputModal } from "../components/name-input-modal";
 import { SaveFilterMenu } from "../components/save-filter-menu";
+import { ICON_TYPE, Icon } from "../components/icon";
 import {
   formatDate,
   formatCalendardDate,
@@ -62,6 +63,9 @@ export const TagsView = ({
   const [savedFilters, setSavedFilters] = useState(
     plugin.settings.savedFilters
   );
+  // Track the currently active filter (loaded) to support auto-save logic.
+  // We use name as ID since names are unique in this plugin.
+  const [activeFilterName, setActiveFilterName] = useState<string | null>(null);
 
   // Content search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -533,7 +537,35 @@ export const TagsView = ({
   sumUpNestedFilesCount(nestedTags);
   setMaxTimesForTags(nestedTags);
 
+  // Helper to update a specific filter in the savedFilters array with current state
+  const updateFilterState = (name: string, currentSavedFilters: SavedFilter[]) => {
+    const index = currentSavedFilters.findIndex((f) => f.name === name);
+    if (index !== -1) {
+      const updatedFilters = [...currentSavedFilters];
+      updatedFilters[index] = {
+        ...updatedFilters[index],
+        selectedOptions,
+        filterAnd,
+        properyFilters: deepCopy(propertyFilterDataList),
+        searchQuery,
+        caseSensitive: caseSensitivityEnabled,
+      };
+      return updatedFilters;
+    }
+    return currentSavedFilters;
+  };
+
   const loadSavedFilter = (filter: SavedFilter) => {
+    // Auto-save the previous active filter if it exists
+    if (activeFilterName && activeFilterName !== filter.name) {
+      const updatedFilters = updateFilterState(activeFilterName, savedFilters);
+      // We need to setSavedFilters here, but since we are also loading a new one,
+      // we should be careful about state updates.
+      // Ideally, we update the state first, then load.
+      setSavedFilters(updatedFilters);
+    }
+
+    setActiveFilterName(filter.name);
     setSelectedOptions(filter.selectedOptions);
     setFilterAnd(filter.filterAnd);
     if (filter.searchQuery !== undefined) {
@@ -560,7 +592,7 @@ export const TagsView = ({
     setSelectedFilters(newPropertyFilter);
   };
 
-  const saveFilter = () => {
+  const createNewFilter = () => {
     new NameInputModal(app, async (name: string) => {
       // Check if the filter already exists
       const filterExists = savedFilters.find(
@@ -584,15 +616,23 @@ export const TagsView = ({
             properyFilters: deepCopy(propertyFilterDataList),
             searchQuery,
             caseSensitive: caseSensitivityEnabled,
+            pinned: false
           };
           setSavedFilters(newFilters);
+          setActiveFilterName(name);
         }
         return;
+      }
+      
+      // Auto-save previous if needed
+      let currentFilters = savedFilters;
+      if (activeFilterName) {
+         currentFilters = updateFilterState(activeFilterName, currentFilters);
       }
 
       setSavedFilters(
         [
-          ...savedFilters,
+          ...currentFilters,
           {
             name,
             selectedOptions,
@@ -600,30 +640,67 @@ export const TagsView = ({
             properyFilters: deepCopy(propertyFilterDataList),
             searchQuery,
             caseSensitive: caseSensitivityEnabled,
+            pinned: false
           },
-        ].sort((a: SavedFilter, b: SavedFilter) => a.name.localeCompare(b.name))
+        ]
+        // Removed sorting to fix position as requested
       );
+      setActiveFilterName(name);
     }).open();
   };
 
-  const removeFilter = async (index: number) => {
-    if (await confirm("Do you really want to delete the filter?")) {
-      const newFilters = [...savedFilters];
-      newFilters.splice(index, 1);
-      setSavedFilters(newFilters);
-    }
-  };
+  
 
   return (
     <div className="tags-overview">
       <div className="top-toolbar">
         <div className="toolbar-left">
-          <SaveFilterMenu
-            savedFilters={savedFilters}
-            loadSavedFilter={loadSavedFilter}
-            saveFilter={saveFilter}
-            removeFilter={removeFilter}
-          />
+          <div className="filter-tabs-container">
+             <SaveFilterMenu 
+               savedFilters={savedFilters}
+               loadSavedFilter={loadSavedFilter}
+               saveFilter={createNewFilter}
+               removeFilter={(index: number) => {
+                 const name = savedFilters[index].name;
+                 const newFilters = [...savedFilters];
+                 newFilters.splice(index, 1);
+                 setSavedFilters(newFilters);
+                 if (activeFilterName === name) {
+                   setActiveFilterName(null);
+                 }
+               }}
+               togglePinFilter={(index: number) => {
+                 const newFilters = [...savedFilters];
+                 newFilters[index].pinned = !newFilters[index].pinned;
+                 setSavedFilters(newFilters);
+               }}
+             />
+             {savedFilters.filter(f => f.pinned).slice(0, 5).map((filter) => (
+               <div 
+                 key={`filter-tab-${filter.name}`}
+                 className={`filter-tab ${activeFilterName === filter.name ? 'is-active' : ''} ${filter.pinned ? 'is-pinned' : ''}`}
+                 onClick={() => loadSavedFilter(filter)}
+                 title={filter.name}
+               >
+                 <span className="tab-name">{filter.name}</span>
+                 <div 
+                   className="tab-icon close-icon"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     const newFilters = [...savedFilters];
+                     const idx = newFilters.findIndex(f => f.name === filter.name);
+                     if (idx !== -1) {
+                       newFilters[idx].pinned = false;
+                       setSavedFilters(newFilters);
+                     }
+                   }}
+                   title="Close (Unpin)"
+                 >
+                   <Icon className="close-icon" iconType={ICON_TYPE.close} />
+                 </div>
+               </div>
+             ))}
+          </div>
         </div>
         <HeaderSettings
           title="Case sensitive"

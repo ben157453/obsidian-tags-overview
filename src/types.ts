@@ -79,4 +79,5 @@ export interface SavedFilter {
   properyFilters: PropertyFilterDataList;
   searchQuery?: string;
   caseSensitive?: boolean;
+  pinned?: boolean;
 }

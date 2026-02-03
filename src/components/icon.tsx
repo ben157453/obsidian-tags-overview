@@ -12,6 +12,9 @@ export const ICON_TYPE = {
   moveDown: "moveDown",
   trash: "trash",
   save: "save",
+  pin: "pin",
+  close: "close",
+  plus: "plus",
 };
 Object.freeze(ICON_TYPE);
 
@@ -56,7 +59,7 @@ export const Icon = ({
         width="24"
         height="24"
         viewBox="0 0 24 24"
-        fill="none"
+        fill={iconType === ICON_TYPE.pin && active ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -119,6 +122,21 @@ export const Icon = ({
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
             <polyline points="17 21 17 13 7 13 7 21" />
             <polyline points="7 3 7 8 15 8" />
+          </>
+        ) : iconType === ICON_TYPE.pin ? (
+          <>
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </>
+        ) : iconType === ICON_TYPE.close ? (
+          <>
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </>
+        ) : iconType === ICON_TYPE.plus ? (
+          <>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </>
         ) : (
           <>

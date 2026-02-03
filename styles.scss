@@ -175,6 +175,15 @@
         color: #222;
         margin-bottom: 10px;
         font-size: var(--font-ui-small);
+
+        .react-select__multi-value__remove {
+            color: var(--text-normal);
+            cursor: pointer;
+            &:hover {
+                background-color: var(--text-error);
+                color: var(--text-on-accent);
+            }
+        }
     }
 
     .tags-filter-text {
@@ -217,7 +226,7 @@
 
         &:not(.slim) {
             border-bottom: 1px solid var(--color-base-40);
-            margin-top: 40px;
+            margin-top: 2px;
             margin-bottom: 2px;
             
             .title {
@@ -422,6 +431,106 @@
 .save-load-filters-icon {
     display: inline-block;
     padding: var(--size-2-2) var(--size-2-3);
+    cursor: pointer;
+    
+    &:hover {
+        color: var(--icon-color-hover);
+    }
+}
+
+.filter-tabs-container {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    
+    .filter-tab {
+        display: flex;
+        align-items: center;
+        padding: 2px 8px;
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 4px 4px 0 0;
+        border-bottom: none;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.2s ease;
+        
+        &:hover {
+            opacity: 1;
+            background-color: var(--background-secondary-alt);
+        }
+        
+        &.is-active {
+            opacity: 1;
+            background-color: var(--background-primary);
+            border-bottom: 1px solid var(--background-primary);
+            font-weight: bold;
+            margin-bottom: -1px; /* Overlap border */
+            z-index: 1;
+        }
+
+        &.is-pinned {
+            border-left: 3px solid var(--color-base-40);
+            background-image: linear-gradient(to right, rgba(255,255,255,0.04), transparent);
+        }
+        &.is-pinned.is-active {
+            border-left: 3px solid var(--interactive-accent);
+            background-image: linear-gradient(to right, rgba(255,255,255,0.10), transparent);
+        }
+
+        .tab-name {
+            margin-right: 6px;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-left: 2px;
+            color: var(--text-muted);
+            
+            &:hover {
+                background-color: var(--background-modifier-hover);
+                color: var(--text-normal);
+            }
+
+            svg {
+                width: 12px;
+                height: 12px;
+            }
+            
+            &.pin-icon.is-pinned {
+                color: var(--text-accent);
+                opacity: 1;
+            }
+        }
+    }
+    
+    .new-tab-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        color: var(--text-muted);
+        border-radius: 4px;
+        
+        &:hover {
+            background-color: var(--background-modifier-hover);
+            color: var(--text-normal);
+        }
+    }
 }
 
 .tag-view-popover {
@@ -432,7 +541,7 @@
     padding: 0px 10px 15px 10px;
     border: 1px solid var(--background-modifier-border-focus);
     border-radius: 10px;
-    z-index: 1000;
+    z-index: 2000;
 
     h4 {
         padding: 0 10px;
@@ -460,6 +569,23 @@
                     color: var(--link-color-hover)
                 }
             }
+
+                .pin-icon {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 6px;
+                    color: var(--text-muted);
+                    
+                    svg {
+                        width: 16px;
+                        height: 16px;
+                    }
+                    
+                    &.is-pinned {
+                        color: var(--interactive-accent);
+                        opacity: 1;
+                    }
+                }
 
             .trash-icon {
                 width: 16px;

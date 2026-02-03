@@ -7,11 +7,13 @@ export const SaveFilterMenu = ({
   loadSavedFilter,
   saveFilter,
   removeFilter,
+  togglePinFilter,
 }: {
   savedFilters: SavedFilter[];
   loadSavedFilter: (filter: SavedFilter) => void;
   saveFilter: () => void;
   removeFilter: (index: number) => void;
+  togglePinFilter: (index: number) => void;
 }) => {
   const [showPopover, setShowPopover] = React.useState(false);
   const ref = React.useRef(null);
@@ -70,6 +72,15 @@ export const SaveFilterMenu = ({
                   >
                     {filter.name}
                   </span>
+
+                  <Icon
+                    className={`pin-icon ${filter.pinned ? "is-pinned" : ""}`}
+                    iconType={ICON_TYPE.pin}
+                    active={filter.pinned}
+                    onClick={() => {
+                      togglePinFilter(index);
+                    }}
+                  />
 
                   <Icon
                     className="trash-icon"
