@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import Select from "react-select";
+import Creatable from "react-select/creatable";
 import { App, TFile, debounce } from "obsidian";
 
 import TagsOverviewPlugin from "../main";
@@ -207,8 +208,28 @@ export const TagsView = ({
     setSelectedFilters(newSelectedFilters);
   };
   // Get files to be displayed
-  const selectedTags: string[] =
-    selectedOptions?.map((option: SelectOption) => option.value) || [];
+  const parseSelected = (
+    options: SelectOption[]
+  ): { tags: string[]; fileToken?: string; pathToken?: string } => {
+    const tags: string[] = [];
+    let fileToken: string | undefined;
+    let pathToken: string | undefined;
+    options?.forEach((option) => {
+      const v = option.value || "";
+      const s = caseSensitivityEnabled ? v : v.toLowerCase();
+      if (s.startsWith("file:")) {
+        fileToken = v.slice(5);
+      } else if (s.startsWith("path:")) {
+        pathToken = v.slice(5);
+      } else {
+        tags.push(v);
+      }
+    });
+    return { tags, fileToken, pathToken };
+  };
+  const { tags: selectedTags, fileToken, pathToken } = parseSelected(
+    selectedOptions || []
+  );
   React.useEffect(() => {
     const tagsArr = selectedTags;
     const prev = plugin.settings.recentTagFilters || [];
@@ -343,8 +364,20 @@ export const TagsView = ({
       return true;
     });
   }
+  if (fileToken && fileToken.trim()) {
+    const needle = caseSensitivityEnabled ? fileToken : fileToken.toLowerCase();
+    filteredFiles = filteredFiles.filter((tf) =>
+      (caseSensitivityEnabled ? tf.file.basename : tf.file.basename.toLowerCase()).includes(needle)
+    );
+  }
+  if (pathToken && pathToken.trim()) {
+    const needle = caseSensitivityEnabled ? pathToken : pathToken.toLowerCase();
+    filteredFiles = filteredFiles.filter((tf) =>
+      (caseSensitivityEnabled ? tf.file.path : tf.file.path.toLowerCase()).includes(needle)
+    );
+  }
 
-  // Debounced content search on currently filtered files
+  // Debounced content search on currently filtered files (full-text only)
   const createQueryRegex = (
     query: string,
     caseSensitive: boolean
@@ -376,7 +409,8 @@ export const TagsView = ({
         matchEndIndex: number;
         header?: string;
       }[] = [];
-      const reTest = createQueryRegex(query, caseSensitive);
+      const term = query.trim();
+      const reTest = createQueryRegex(term, caseSensitive);
       const reMatch = new RegExp(reTest.source, `${reTest.flags}g`);
       for (const tf of files) {
         const contents = await plugin.app.vault.read(tf.file);
@@ -717,7 +751,7 @@ export const TagsView = ({
       </div>
 
       <div className="tags-row">
-        <Select
+        <Creatable
           className="tags-filter-select"
           classNamePrefix="react-select"
           value={selectedOptions}
@@ -732,7 +766,7 @@ export const TagsView = ({
             }
           )}
           name="Filter"
-          placeholder="Select tags..."
+          placeholder="Select tags... 或输入 file:/path: 进行筛选"
           isMulti
         />
       </div>

@@ -731,6 +731,9 @@
   border-left: 3px solid var(--color-base-40);
   background-image: linear-gradient(to right, rgba(255,255,255,0.04), transparent);
 }
+.tags-overview .filter-tabs-container .filter-tab.is-pinned:not(.is-active) {
+  border-left: none;
+}
 .tags-overview .filter-tabs-container .filter-tab.is-pinned.is-active {
   border-left: 3px solid var(--interactive-accent);
   background-image: linear-gradient(to right, rgba(255,255,255,0.10), transparent);
