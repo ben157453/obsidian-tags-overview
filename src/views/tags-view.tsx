@@ -1025,6 +1025,30 @@ export const TagsView = ({
         }}
       />
 
+      {tagsCount === 0 && displayFiles.length > 0 && (
+        <div className="tags-container display-type-compact">
+          <div>
+            {displayFiles.map((fileItem: TaggedFile, index: number) => (
+              <span
+                key={`${fileItem.file.path}-${index}`}
+                onClick={(event) =>
+                  onFileClicked(fileItem.file, event.ctrlKey || event.metaKey)
+                }
+                draggable={true}
+                onDragStart={(event) => {
+                  const linkText = `[[${fileItem.file.basename}]]`;
+                  event.dataTransfer.setData("text/plain", linkText);
+                  event.dataTransfer.effectAllowed = "copy";
+                }}
+                className="file-link"
+              >
+                {fileItem.file.basename}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       
     </div>
   );
