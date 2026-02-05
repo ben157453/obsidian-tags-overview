@@ -30,6 +30,19 @@
   background-color: var(--color-base-100);
   color: var(--color-base-40);
 }
+.tags-overview .fallback-files-list {
+  margin: 8px 0 16px;
+}
+.tags-overview .fallback-files-list .file-row {
+  padding: 6px 8px;
+  font-size: var(--font-ui-small);
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+}
+.tags-overview .fallback-files-list .file-row:hover {
+  background-color: var(--background-secondary);
+  color: var(--link-color-hover);
+}
 .tags-overview .tag-title-row {
   margin: 10px 0 5px;
 }

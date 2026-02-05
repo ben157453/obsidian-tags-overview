@@ -32,6 +32,7 @@ export interface TagsOverviewSettings {
   recentSearches: string[];
   recentTagFilters: string[][];
   recentSavedFilters: string[];
+  recentFilterTokens: string[];
 }
 
 export const DEFAULT_SETTINGS: TagsOverviewSettings = {
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: TagsOverviewSettings = {
   recentSearches: [],
   recentTagFilters: [],
   recentSavedFilters: [],
+  recentFilterTokens: [],
 };
 
 export class TagsOverviewSettingTab extends PluginSettingTab {

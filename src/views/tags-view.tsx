@@ -31,7 +31,7 @@ import {
   TagData,
   TaggedFile,
 } from "src/types";
-import { FILTER_TYPES } from "src/constants";
+import { FILTER_TYPES, DISPLAY_TYPE } from "src/constants";
 
 export const TagsView = ({
   rootView,
@@ -241,6 +241,21 @@ export const TagsView = ({
     if (!exists) {
       const next = [tagsArr, ...prev].slice(0, 6);
       plugin.saveSettings({ recentTagFilters: next });
+    }
+    const tokensPrev = plugin.settings.recentFilterTokens || [];
+    const newTokens: string[] = [];
+    if (fileToken && fileToken.trim()) {
+      newTokens.push(`file:${fileToken}`);
+    }
+    if (pathToken && pathToken.trim()) {
+      newTokens.push(`path:${pathToken}`);
+    }
+    if (newTokens.length) {
+      const dedup = [
+        ...newTokens,
+        ...tokensPrev.filter((t) => !newTokens.includes(t)),
+      ].slice(0, 6);
+      plugin.saveSettings({ recentFilterTokens: dedup });
     }
   }, [selectedOptions]);
   let filteredFiles: TaggedFile[] = selectedTags.length
@@ -758,6 +773,66 @@ export const TagsView = ({
           onChange={(val: SelectOption[]) => {
             setSelectedOptions(val);
           }}
+          components={{
+            MultiValueLabel: (props: {
+              data?: { label?: string; value?: string };
+              innerProps?: React.HTMLAttributes<HTMLDivElement>;
+              children?: React.ReactNode;
+            }) => {
+              const label = props.data?.label || "";
+              const val = (props.data?.value || "").toString();
+              const lower = val.toLowerCase();
+              const isTag =
+                !lower.startsWith("file:") && !lower.startsWith("path:");
+              return (
+                <div
+                  {...props.innerProps}
+                  draggable={isTag}
+                  onDragStart={(event) => {
+                    if (isTag) {
+                      event.dataTransfer.setData("text/plain", `# ${label}`);
+                      event.dataTransfer.effectAllowed = "copy";
+                    }
+                  }}
+                  className="react-select__multi-value__label"
+                >
+                  {props.children}
+                </div>
+              );
+            },
+            Option: (props: {
+              data?: { label?: string; value?: string };
+              innerProps?: React.HTMLAttributes<HTMLDivElement>;
+              isFocused?: boolean;
+              isSelected?: boolean;
+              children?: React.ReactNode;
+            }) => {
+              const label = props.data?.label || "";
+              const val = (props.data?.value || "").toString();
+              const lower = val.toLowerCase();
+              const isTag =
+                !lower.startsWith("file:") && !lower.startsWith("path:");
+              return (
+                <div
+                  {...props.innerProps}
+                  draggable={isTag}
+                  onDragStart={(event) => {
+                    if (isTag) {
+                      event.dataTransfer.setData("text/plain", `# ${label}`);
+                      event.dataTransfer.effectAllowed = "copy";
+                    }
+                  }}
+                  className={`react-select__option${
+                    props.isFocused ? " react-select__option--is-focused" : ""
+                  }${
+                    props.isSelected ? " react-select__option--is-selected" : ""
+                  }`}
+                >
+                  {props.children}
+                </div>
+              );
+            },
+          }}
           options={convertStringsToOptions(allTags).sort(
             (optionA: SelectOption, optionB: SelectOption): number => {
               const lblA: string = optionA.label.toLowerCase();
@@ -769,6 +844,56 @@ export const TagsView = ({
           placeholder="Select tags... 或输入 file:/path: 进行筛选"
           isMulti
         />
+        {(plugin.settings.recentFilterTokens || []).length > 0 && (
+          <div className="recent-tag-filters">
+            <ul>
+              {(plugin.settings.recentFilterTokens || [])
+                .slice(0, 6)
+                .map((tok: string, idx: number) => (
+                  <li
+                    key={`recent-token-${tok}-${idx}`}
+                    onClick={() => {
+                      const exists = selectedOptions.find(
+                        (o) => (o.value || "") === tok
+                      );
+                      if (!exists) {
+                        setSelectedOptions([
+                          ...selectedOptions,
+                          { label: tok, value: tok },
+                        ]);
+                      }
+                    }}
+                    draggable={true}
+                    onDragStart={(event) => {
+                      const lower = tok.toLowerCase();
+                      if (lower.startsWith("file:")) {
+                        const name = tok.slice(5);
+                        event.dataTransfer.setData(
+                          "text/plain",
+                          `[[${name}]]`
+                        );
+                      } else if (lower.startsWith("path:")) {
+                        const path = tok.slice(5);
+                        const name = path.split("/").pop() || path;
+                        event.dataTransfer.setData(
+                          "text/plain",
+                          `[[${name}]]`
+                        );
+                      } else {
+                        event.dataTransfer.setData(
+                          "text/plain",
+                          `# ${tok}`
+                        );
+                      }
+                      event.dataTransfer.effectAllowed = "copy";
+                    }}
+                  >
+                    {tok}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="search-row">
@@ -1026,11 +1151,34 @@ export const TagsView = ({
       />
 
       {tagsCount === 0 && displayFiles.length > 0 && (
-        <div className="tags-container display-type-compact">
-          <div>
+        plugin.settings.displayType === DISPLAY_TYPE.compact ? (
+          <div className="tags-container display-type-compact">
+            <div>
+              {displayFiles.map((fileItem: TaggedFile, index: number) => (
+                <span
+                  key={`${fileItem.file.path}-${index}`}
+                  onClick={(event) =>
+                    onFileClicked(fileItem.file, event.ctrlKey || event.metaKey)
+                  }
+                  draggable={true}
+                  onDragStart={(event) => {
+                    const linkText = `[[${fileItem.file.basename}]]`;
+                    event.dataTransfer.setData("text/plain", linkText);
+                    event.dataTransfer.effectAllowed = "copy";
+                  }}
+                  className="file-link"
+                >
+                  {fileItem.file.basename}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="fallback-files-list">
             {displayFiles.map((fileItem: TaggedFile, index: number) => (
-              <span
+              <div
                 key={`${fileItem.file.path}-${index}`}
+                className="file-row"
                 onClick={(event) =>
                   onFileClicked(fileItem.file, event.ctrlKey || event.metaKey)
                 }
@@ -1040,13 +1188,12 @@ export const TagsView = ({
                   event.dataTransfer.setData("text/plain", linkText);
                   event.dataTransfer.effectAllowed = "copy";
                 }}
-                className="file-link"
               >
                 {fileItem.file.basename}
-              </span>
+              </div>
             ))}
           </div>
-        </div>
+        )
       )}
 
       
